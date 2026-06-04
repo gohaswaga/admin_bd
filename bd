@@ -1,0 +1,79 @@
+create database LESSON
+use LESSON
+
+-- 1 --
+
+CREATE TABLE User_Logs(
+    id INT IDENTITY (1, 1) PRIMARY KEY,
+    username TEXT NOT NULL,
+    user_action TEXT NOT NULL,
+    action_date DATE NOT NULL,
+    action_time TIME NOT NULL,
+    action_result TEXT NOT NULL
+);
+
+SET NOCOUNT ON;
+
+CREATE TABLE #Usernames (val NVARCHAR(50));
+INSERT INTO #Usernames VALUES ('admin'), ('ivan_ivanov'), ('alex_smith'), ('john_doe'), ('maria_p'), ('user_99'), ('moderator_1');
+
+CREATE TABLE #Actions (val NVARCHAR(50));
+INSERT INTO #Actions VALUES ('LOGIN'), ('LOGOUT'), ('VIEW_PAGE'), ('UPDATE_PROFILE'), ('DOWNLOAD_FILE'), ('UPLOAD_FILE'), ('DELETE_ITEM');
+
+CREATE TABLE #Results (val NVARCHAR(50));
+INSERT INTO #Results VALUES ('SUCCESS'), ('SUCCESS'), ('SUCCESS'), ('FAILED'), ('TIMEOUT');
+
+DECLARE @StartDate DATE = '2025-01-01';
+DECLARE @DaysInYear INT = 365;
+
+;WITH 
+E1(N) AS (SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1), -- 10 строк
+E2(N) AS (SELECT 1 FROM E1 a, E1 b), 
+E4(N) AS (SELECT 1 FROM E2 a, E2 b), 
+E6(N) AS (SELECT 1 FROM E4 a, E4 b),
+Tally(Num) AS (
+    SELECT TOP (1000000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) 
+    FROM E6
+)
+INSERT INTO User_Logs (username, user_action, action_date, action_time, action_result)
+SELECT 
+
+    (SELECT TOP 1 val FROM #Usernames ORDER BY ABS(CHECKSUM(NEWID(), t.Num))),
+
+    (SELECT TOP 1 val FROM #Actions ORDER BY ABS(CHECKSUM(NEWID(), t.Num + 1))),
+
+    DATEADD(DAY, ABS(CHECKSUM(NEWID(), t.Num + 2)) % @DaysInYear, @StartDate),
+
+    DATEADD(SECOND, ABS(CHECKSUM(NEWID(), t.Num + 3)) % 86400, CAST('00:00:00' AS TIME)),
+
+    (SELECT TOP 1 val FROM #Results ORDER BY ABS(CHECKSUM(NEWID(), t.Num + 4)))
+FROM Tally t;
+
+DROP TABLE #Usernames;
+DROP TABLE #Actions;
+DROP TABLE #Results;
+
+PRINT 'Генерация 1 000 000 записей успешно завершена!';
+
+select count (*) as total_rows from User_Logs
+select * from User_Logs
+
+-- 2 --
+
+--ALTER DATABASE LESSON ADD FILEGROUP January;
+--ALTER DATABASE LESSON ADD FILEGROUP February;
+--ALTER DATABASE LESSON ADD FILEGROUP March;
+--ALTER DATABASE LESSON ADD FILEGROUP April;
+--ALTER DATABASE LESSON ADD FILEGROUP May;
+--ALTER DATABASE LESSON ADD FILEGROUP June;
+--ALTER DATABASE LESSON ADD FILEGROUP July;
+--ALTER DATABASE LESSON ADD FILEGROUP August;
+--ALTER DATABASE LESSON ADD FILEGROUP September;
+--ALTER DATABASE LESSON ADD FILEGROUP October;
+--ALTER DATABASE LESSON ADD FILEGROUP November;
+--ALTER DATABASE LESSON ADD FILEGROUP December;
+
+create partition function cutting (date) 
+as range right for values (
+'2025-02-01', '2025-03-01', '2025-04-01',
+'2025-05-01', '2025-06-01', '2025-07-01'
